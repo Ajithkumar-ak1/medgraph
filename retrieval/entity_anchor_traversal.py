@@ -3,6 +3,7 @@ from retrieval.path_ranker import rank_paths
 import numpy as np
 from retrieval.path_ranker import RELATION_WEIGHTS
 from retrieval.similarity import cosine_similarity
+from retrieval.reasoning import ReasoningBuilder
 
 class EntityAnchorTraversal:
 

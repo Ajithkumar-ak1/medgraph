@@ -4,6 +4,8 @@ from retrieval.evidence_builder import build_evidence
 from retrieval.entity_anchor_traversal import EntityAnchorTraversal
 from retrieval.context_builder import build_context
 from retrieval.entity_anchor_traversal import EntityAnchorTraversal
+from retrieval.reasoning import ReasoningBuilder
+
 from llm import generate_answer
 
 
@@ -37,57 +39,33 @@ def graphrag(question):
     )
 
     ranked_paths = traversal.traverse(results)
+    # 5. Reasoning Chain
 
-    print("\n========== Entity Anchor Traversal ==========")
-
-    for item in ranked_paths:
-
-        print()
-
-        print("Score :", round(item["score"], 3))
-
-        path = item["path"]
-
-        nodes = path.nodes
-        rels = path.relationships
-
-        print(nodes[0]["name"])
-
-        for i in range(len(rels)):
-
-            print("  |")
-
-            print(" ", rels[i].type)
-
-            print("  |")
-
-            print(nodes[i + 1]["name"])
-
-        print("-------------------------")
-
-    
+    reasoning_builder = ReasoningBuilder()
 
 
-    # 5. Evidence
-    evidence = build_evidence(
+    triples = reasoning_builder.extract_triples(
         ranked_paths
     )
 
-    print("\n========== Evidence ==========")
-
-    for e in evidence:
-        print(e)
-
-    print("==============================")
-
-
-    # 6. Context
-    context = build_context(
-        evidence
+    triples = reasoning_builder.remove_duplicates(
+        triples
     )
 
-    print("========== Context ==========")
+
+    groups = reasoning_builder.group_triples(
+        triples
+    )
+
+
+    context = reasoning_builder.build_chain(
+        groups
+    )
+
+
+    print("\n========== Reasoning Context ==========")
     print(context)
+    print("======================================")
     # 7. LLM
     answer = generate_answer(
         question,
