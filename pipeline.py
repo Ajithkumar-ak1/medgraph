@@ -1,9 +1,9 @@
 from embedding.model import model
 from retrieval.vector_search import vector_search
-from retrieval.graph_expansion import expand_nodes
-from retrieval.path_ranker import rank_paths
 from retrieval.evidence_builder import build_evidence
+from retrieval.entity_anchor_traversal import EntityAnchorTraversal
 from retrieval.context_builder import build_context
+from retrieval.entity_anchor_traversal import EntityAnchorTraversal
 from llm import generate_answer
 
 
@@ -21,45 +21,51 @@ def graphrag(question):
     print("\n========== Vector Search Results ==========")
     print(results)
 
-    print("\n====================")
-    node_names = [
-        r["name"]
-        for r in results
-    ]
-
-
-    # 3. Graph expansion
-    paths = expand_nodes(
-        node_names
-    )
-
-
-    # 4. Ranking
-    scores = {
+    # 3. Build entity scores
+    entity_scores = {
         r["name"]: r["score"]
         for r in results
     }
 
+    # 4. Entity Anchor Traversal
 
-    ranked_paths = rank_paths(
-        paths,
-        scores
+    traversal = EntityAnchorTraversal(
+        query_embedding=embedding,
+        entity_scores=entity_scores,
+        max_hops=2,
+        beam_width=5
     )
-    print("\n========== Ranked Paths ==========")
+
+    ranked_paths = traversal.traverse(results)
+
+    print("\n========== Entity Anchor Traversal ==========")
 
     for item in ranked_paths:
 
+        print()
+
+        print("Score :", round(item["score"], 3))
+
         path = item["path"]
 
-        print("Score:", item["score"])
+        nodes = path.nodes
+        rels = path.relationships
 
-        for node in path.nodes:
-            print(node["name"])
+        print(nodes[0]["name"])
 
-        for rel in path.relationships:
-            print(rel.type)
+        for i in range(len(rels)):
 
-        print("----------------")
+            print("  |")
+
+            print(" ", rels[i].type)
+
+            print("  |")
+
+            print(nodes[i + 1]["name"])
+
+        print("-------------------------")
+
+    
 
 
     # 5. Evidence
@@ -80,7 +86,8 @@ def graphrag(question):
         evidence
     )
 
-
+    print("========== Context ==========")
+    print(context)
     # 7. LLM
     answer = generate_answer(
         question,

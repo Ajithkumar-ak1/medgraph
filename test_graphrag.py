@@ -1,6 +1,6 @@
 from pipeline import graphrag
 
-question = "What medicine treats a disease diabetes?"
+question = "Why might a patient with excessive thirst receive insulin?"
 
 
 answer = graphrag(question)
